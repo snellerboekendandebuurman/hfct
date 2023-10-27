@@ -13,7 +13,7 @@ from .exceptions import APIError
 SIMPLE_KEY = "bGlzYXgtYXBpLXB1Yi11c2VyOjZUNmhyTTBOZTkxQlNqa3ZpSnhoOE1BalNucE4xTTl1"
 
 
-class KNLTBClient(ClientBase):
+class ClientKNLTB(ClientBase):
     BASE_URL = "https://api.knltb.club/"
 
     def __init__(self, x_lisa_auth_token=None, club_id=None):
