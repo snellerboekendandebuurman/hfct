@@ -9,8 +9,12 @@ readme = "README.md"
 python = "^3.11"
 pytz = "^2023.3.post1"
 requests = "^2.31.0"
-
+pytest = "^7.4.3"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

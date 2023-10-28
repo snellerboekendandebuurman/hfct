@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 
 class ClientBase(ABC):
     @abstractmethod
+    def has_connection(self) -> bool:
+        pass
+
+    @abstractmethod
     def authenticate_with_club_number_password(self, **kwargs) -> None:
         pass
 

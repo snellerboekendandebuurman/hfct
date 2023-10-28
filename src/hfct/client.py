@@ -10,7 +10,10 @@ class AuthenticationMethods(BaseEnum):
 
 
 def authenticate(client_name: Clients, auth_method: AuthenticationMethods, **kwargs) -> ClientBase:
-    client = ClientFactory.create_client(client_name)
+    client = ClientFactory.create_client(client_name, **kwargs)
+
+    if client.has_connection():
+        return client
 
     if auth_method == AuthenticationMethods.CLUB_NUMBER_PASSWORD:
         client.authenticate_with_club_number_password(**kwargs)
