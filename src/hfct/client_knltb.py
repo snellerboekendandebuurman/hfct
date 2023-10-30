@@ -37,51 +37,56 @@ class ClientKNLTB(ClientBase):
         return self._handle_response(response)
 
     def authenticate_with_club_number_password(self, **kwargs) -> None:
-        club_id = kwargs.get("club_id")
+        if not self.club_id:
+            raise ValueError("Please provide club_id in order to login.")
+
+        # Log the user in
         club_number = kwargs.get("club_number")
         password = kwargs.get("password")
 
-        if not club_number or not password or not club_id:
-            raise ValueError("Both 'club_number', 'password' and 'club_id' must be provided.")
+        if not club_number or not password:
+            raise ValueError("Both 'club_number' and 'password' must be provided.")
 
         payload = {
-            "club_number": club_number,
+            "club_membership_number": club_number,
             "password": password
         }
 
-        return self._login(club_id, payload)
+        return self._login(payload)
 
     def authenticate_with_association_number_password(self, **kwargs) -> None:
-        club_id = kwargs.get("club_id")
+        if not self.club_id:
+            raise ValueError("Please provide club_id in order to login.")
+        
+        # Log the user in
         association_number = kwargs.get("association_number")
         password = kwargs.get("password")
 
-        if not association_number or not password or not club_id:
-            raise ValueError("Both 'club_number', 'password' and 'club_id' must be provided.")
+        if not association_number or not password:
+            raise ValueError("Both 'association_number' and 'password' must be provided.")
 
         payload = {
             "bond_number": association_number,
             "password": password
         }
 
-        return self._login(club_id, payload)
+        return self._login(payload)
 
     def has_connection(self) -> bool:
         if not self.x_lisa_auth_token or not self.club_id:
             return False
 
         # TODO: Check if the current x_lisa_auth_token is still valid
-        #       if that's not the case, refresh is if possible.
+        #       if that's not the case, refresh it if possible.
 
         return True
 
 
-
-    def seach_player(self, search_name):
+    def search_player(self, search_name: str):
         if not self.club_id or not self.x_lisa_auth_token:
             raise ValueError("Please login or provide 'club_id' & 'x_lisa_auth_token' to the Client")
 
-        response = self.session.get(self._url_for(f"v1/pub/tennis/clubs/{club_id}/members?page_size=25&name_pattern={search_name}&page_number=1"))
+        response = self.session.get(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/members?page_size=25&name_pattern={search_name}&page_number=1"))
 
         return self._handle_response(response)
 
@@ -107,7 +112,7 @@ class ClientKNLTB(ClientBase):
                 "start_at": formatted_date_time,
                 "club_member_ids": [buddy_one_id, buddy_two_id, buddy_three_id, buddy_four_id],
                 "products": [],
-                "callback_url": "https:\/\/betalingen.knltb.club\/AppCustomPages\/redirectButton\/tennis",
+                "callback_url": "https://betalingen.knltb.club/AppCustomPages/redirectButton/tennis",
                 "guests": [],
                 "court_id": court_id
 	        }
@@ -132,19 +137,17 @@ class ClientKNLTB(ClientBase):
             return data
         raise APIError(data.get('error', 'Unknown error'))
 
-    def _login(self, club_id, payload):
-        self.club_id = club_id
+    def _login(self, payload):
+        response = self.session.post(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/auth_tokens"), data=json.dumps(payload))
 
-        response = self.session.post(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/auth_tokens"), data=json.dumps(payload)).json()
+        parsed_response = self._handle_response(response)
 
-        # TODO: Check for an OK response
-
-        x_lisa_auth_token = response.get("token")
+        x_lisa_auth_token = parsed_response.get("token")
         if x_lisa_auth_token:
             self.x_lisa_auth_token = x_lisa_auth_token
             self.session.headers.update({'x-lisa-auth-token': self.x_lisa_auth_token})
 
-        return response
+        return parsed_response
 
     def _get_first_available_court_id(self, timeline_court_availability, sport_type, start_date_time):
         for i, court_information in enumerate(timeline_court_availability):
