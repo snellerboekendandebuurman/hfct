@@ -109,9 +109,9 @@ class ClientKNLTB(ClientBase):
 
         formatted_date_time = self._format_date_time_from_cet_to_utc(date, time_start)
 
-        court_id = self._get_first_available_court_id(timeline_court_availability, sport_type, formatted_date_time)
+        court_details = self._get_first_available_court_id(timeline_court_availability, sport_type, formatted_date_time)
 
-        if not court_id:
+        if not court_details:
             raise APIError("No available court found")
 
         payload = {
@@ -121,18 +121,18 @@ class ClientKNLTB(ClientBase):
                 "products": [],
                 "callback_url": "https://betalingen.knltb.club/AppCustomPages/redirectButton/tennis",
                 "guests": [],
-                "court_id": court_id
+                "court_id": court_details.get("id")
 	        }
         }
 
-        return payload
+        return payload, court_details
         # BELOW IS THE CODE FOR MAKING THE BOOKING FINAL
         # FOR NOW WE WILL ONLY RETURN THE PAYLOAD
 
         # response = self.session.post(self._url_for(f"/v1/pub/tennis/clubs/{club_id}/reservations"), data=json.dumps(payload))
 
         # parsed_response = self._handle_response(response, "Unable to make reservation")
-        # return parsed_response
+        # return court_details
 
     def _url_for(self, endpoint):
         return f"{self.BASE_URL}{endpoint}"
@@ -185,7 +185,7 @@ class ClientKNLTB(ClientBase):
                     if start_time != start_date_time:
                         continue
 
-                    return court_details.get("id")
+                    return court_details
 
     def _format_date_time_from_cet_to_utc(self, date, time):
         datetime_str = date + " " + time
