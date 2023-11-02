@@ -34,7 +34,9 @@ class ClientKNLTB(ClientBase):
 
     def search_club(self, search_term):
         response = self.session.get(self._url_for(f'v1/pub/tennis/federations/7E130D84-5644-4E38-9495-3B72A353E848/clubs?city_pattern={search_term}&page_number=1&name_pattern={search_term}&page_size=100'))
-        return self._handle_response(response)
+        parsed_response = self._handle_response(response, "Unable to search for club.")
+
+        return parsed_response
 
     def authenticate_with_club_number_password(self, **kwargs) -> None:
         if not self.club_id:
@@ -57,7 +59,7 @@ class ClientKNLTB(ClientBase):
     def authenticate_with_association_number_password(self, **kwargs) -> None:
         if not self.club_id:
             raise ValueError("Please provide club_id in order to login.")
-        
+
         # Log the user in
         association_number = kwargs.get("association_number")
         password = kwargs.get("password")
@@ -83,12 +85,14 @@ class ClientKNLTB(ClientBase):
 
 
     def search_player(self, search_name: str):
-        if not self.club_id or not self.x_lisa_auth_token:
+        if not self.has_connection():
             raise ValueError("Please login or provide 'club_id' & 'x_lisa_auth_token' to the Client")
 
         response = self.session.get(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/members?page_size=25&name_pattern={search_name}&page_number=1"))
 
-        return self._handle_response(response)
+        parsed_response = self._handle_response(response, "Unable to search for player.")
+
+        return parsed_response
 
     def book_court(self, sport_type, date, time_start, buddy_one_id, buddy_two_id, buddy_three_id, buddy_four_id):
         if not self.club_id or not self.x_lisa_auth_token:
@@ -107,6 +111,9 @@ class ClientKNLTB(ClientBase):
 
         court_id = self._get_first_available_court_id(timeline_court_availability, sport_type, formatted_date_time)
 
+        if not court_id:
+            raise APIError("No available court found")
+
         payload = {
             "reservation": {
                 "start_at": formatted_date_time,
@@ -124,23 +131,24 @@ class ClientKNLTB(ClientBase):
 
         # response = self.session.post(self._url_for(f"/v1/pub/tennis/clubs/{club_id}/reservations"), data=json.dumps(payload))
 
-        # return self._handle_response(response)
+        # parsed_response = self._handle_response(response, "Unable to make reservation")
+        # return parsed_response
 
     def _url_for(self, endpoint):
         return f"{self.BASE_URL}{endpoint}"
 
-    def _handle_response(self, response):
+    def _handle_response(self, response, error_message):
         # This assumes a JSON API. Adjust as necessary for other response types.
-        data = response.json()
 
         if 200 <= response.status_code < 300:
-            return data
-        raise APIError(data.get('error', 'Unknown error'))
+            return response.json()
+        # Use custom error_message, since there was no available one in the response
+        raise APIError(error_message)
 
     def _login(self, payload):
         response = self.session.post(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/auth_tokens"), data=json.dumps(payload))
 
-        parsed_response = self._handle_response(response)
+        parsed_response = self._handle_response(response, "Unable to login.")
 
         x_lisa_auth_token = parsed_response.get("token")
         if x_lisa_auth_token:
@@ -193,7 +201,7 @@ class ClientKNLTB(ClientBase):
         return utc_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-# client = APIClient("")
+# client = ClientKNLTB()
 
 # Search for Club Info
 # response = client.search_club("HC Tilburg")
