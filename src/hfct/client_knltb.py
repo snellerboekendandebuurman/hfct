@@ -132,7 +132,7 @@ class ClientKNLTB(ClientBase):
         # response = self.session.post(self._url_for(f"/v1/pub/tennis/clubs/{club_id}/reservations"), data=json.dumps(payload))
 
         # parsed_response = self._handle_response(response, "Unable to make reservation")
-        # return court_details
+        # return payload, court_details
 
     def _url_for(self, endpoint):
         return f"{self.BASE_URL}{endpoint}"
