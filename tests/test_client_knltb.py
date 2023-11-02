@@ -1,8 +1,10 @@
 import pytest
+from hfct import client_knltb
 from hfct.client import AuthenticationMethods, authenticate
 
 from hfct.client_knltb import ClientKNLTB
 from hfct.clients import Clients
+from hfct.exceptions import APIError
 
 
 CLUB_ID_HCTILBURG = "0009fb2d-b99b-4e18-9923-61a02b3c7a68"
@@ -75,6 +77,13 @@ class TestClientKNLTBSearchClub:
 
         assert str(exc_info.value) == "Both 'club_number' and 'password' must be provided."
 
+
+    def test_authenticate_club_number_password_unsuccessful(self) -> None:
+        with pytest.raises(APIError) as error:
+            authenticate(Clients.KNLTB, AuthenticationMethods.CLUB_NUMBER_PASSWORD, club_id=CLUB_ID_HCTILBURG, club_number=CLUB_NUMBER_JORIS_JANSEN, password="test123123")
+
+        assert str(error.value) == "Unable to login."
+
     def test_authenticate_club_number_password_successful(self) -> None:
         client_knltb = authenticate(Clients.KNLTB, AuthenticationMethods.CLUB_NUMBER_PASSWORD, club_id=CLUB_ID_HCTILBURG, club_number=CLUB_NUMBER_JORIS_JANSEN, password=CLUB_PASSWORD_JORIS_JANSEN)
 
@@ -95,7 +104,14 @@ class TestClientKNLTBSearchClub:
         assert client_knltb_new.simple_key is not None
         assert client_knltb_new.has_connection() == True
 
-    def test_search_player(self) -> None:
+    def test_search_player_unsuccessful(self) -> None:
+        with pytest.raises(APIError) as error:
+            client_knltb = authenticate(client_name=Clients.KNLTB, auth_method=AuthenticationMethods.CLUB_NUMBER_PASSWORD, club_id=CLUB_ID_HCTILBURG, x_lisa_auth_token="30237njsdfh=")
+            client_knltb.search_player("Joris Jansen")
+
+            assert str(error.value) == "Unable to search player."
+
+    def test_search_player_successful(self) -> None:
         client_knltb = authenticate(Clients.KNLTB, AuthenticationMethods.CLUB_NUMBER_PASSWORD, club_id=CLUB_ID_HCTILBURG, club_number=CLUB_NUMBER_JORIS_JANSEN, password=CLUB_PASSWORD_JORIS_JANSEN)
 
         assert client_knltb.club_id is not None
