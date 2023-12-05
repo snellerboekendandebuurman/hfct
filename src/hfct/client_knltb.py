@@ -125,14 +125,15 @@ class ClientKNLTB(ClientBase):
 	        }
         }
 
-        return payload, court_details
+        # USE THIS RETURN FOR TESTING PURPOSES
+        # return payload, court_details
+
         # BELOW IS THE CODE FOR MAKING THE BOOKING FINAL
         # FOR NOW WE WILL ONLY RETURN THE PAYLOAD
+        response = self.session.post(self._url_for(f"/v1/pub/tennis/clubs/{self.club_id}/reservations"), data=json.dumps(payload))
 
-        # response = self.session.post(self._url_for(f"/v1/pub/tennis/clubs/{club_id}/reservations"), data=json.dumps(payload))
-
-        # parsed_response = self._handle_response(response, "Unable to make reservation")
-        # return payload, court_details
+        parsed_response = self._handle_response(response, "Unable to make reservation")
+        return parsed_response, court_details
 
     def _url_for(self, endpoint):
         return f"{self.BASE_URL}{endpoint}"
