@@ -105,12 +105,10 @@ class ClientKNLTB(ClientBase):
     def search_player(self, search_name: str):
         if not self.has_connection():
             raise ValueError("Please login or provide 'club_id' & 'x_lisa_auth_token' to the Client")
+        
+        response = self.make_request("GET", f"v1/pub/tennis/clubs/{self.club_id}/members?page_size=25&name_pattern={search_name}&page_number=1")
 
-        response = self.session.get(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/members?page_size=25&name_pattern={search_name}&page_number=1"))
-
-        parsed_response = self._handle_response(response, "Unable to search for player.")
-
-        return parsed_response
+        return self._handle_response(response, "Unable to search for player.")
 
     def book_court(self, sport_type, date, time_start, buddy_one_id, buddy_two_id, buddy_three_id, buddy_four_id):
         if not self.club_id or not self.x_lisa_auth_token:
