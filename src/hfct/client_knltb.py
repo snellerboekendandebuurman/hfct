@@ -6,7 +6,7 @@ from datetime import datetime
 
 from hfct.client_base import ClientBase
 
-
+from .authentication_methods import AuthenticationMethods
 from .exceptions import APIError
 
 
@@ -16,9 +16,11 @@ SIMPLE_KEY = "bGlzYXgtYXBpLXB1Yi11c2VyOjZUNmhyTTBOZTkxQlNqa3ZpSnhoOE1BalNucE4xTT
 class ClientKNLTB(ClientBase):
     BASE_URL = "https://api.knltb.club/"
 
-    def __init__(self, x_lisa_auth_token=None, club_id=None):
+    def __init__(self, x_lisa_auth_token=None, club_id=None, auth_method=None, kwargs=None):
         self.x_lisa_auth_token = x_lisa_auth_token
         self.club_id = club_id
+        self.auth_method = auth_method
+        self.kwargs = kwargs
 
         self.simple_key = SIMPLE_KEY
 
@@ -32,11 +34,24 @@ class ClientKNLTB(ClientBase):
 
         self.session.headers.update({"Content-Type": "application/json"})
 
-    def search_club(self, search_term):
-        response = self.session.get(self._url_for(f'v1/pub/tennis/federations/7E130D84-5644-4E38-9495-3B72A353E848/clubs?city_pattern={search_term}&page_number=1&name_pattern={search_term}&page_size=100'))
-        parsed_response = self._handle_response(response, "Unable to search for club.")
+    def make_request(self, method, endpoint, data=None, retries=3):
+        """
+        Make a request to the API and handle unauthorized errors.
+        This function will retry the request up to 'retries' times in case of a 401 response.
+        """
+        url = self._url_for(endpoint)
+        response = self.session.request(method, url, data)
 
-        return parsed_response
+        if 200 <= response.status_code < 300:
+            return response
+        
+        self.reauthenticate()
+        return self.make_request(method, endpoint, data, retries=retries-1)
+
+    def search_club(self, search_term):
+        response = self.make_request("GET", f'v1/pub/tennis/federations/7E130D84-5644-4E38-9495-3B72A353E848/clubs?city_pattern={search_term}&page_number=1&name_pattern={search_term}&page_size=100')
+
+        return self._handle_response(response, "Unable to search for club.")
 
     def authenticate_with_club_number_password(self, **kwargs) -> None:
         if not self.club_id:
@@ -74,15 +89,18 @@ class ClientKNLTB(ClientBase):
 
         return self._login(payload)
 
+    def reauthenticate(self):
+        if self.auth_method == AuthenticationMethods.CLUB_NUMBER_PASSWORD:
+            return self.authenticate_with_club_number_password(**self.kwargs)
+        elif self.auth_method == AuthenticationMethods.ASSOCIATION_NUMBER_PASSWORD:
+            return self.authenticate_with_association_number_password(**self.kwargs)
+        else:
+            raise ValueError(f"Unsupported authentication method: {self.auth_method}")
+
     def has_connection(self) -> bool:
         if not self.x_lisa_auth_token or not self.club_id:
             return False
-
-        # TODO: Check if the current x_lisa_auth_token is still valid
-        #       if that's not the case, refresh it if possible.
-
         return True
-
 
     def search_player(self, search_name: str):
         if not self.has_connection():
@@ -98,12 +116,12 @@ class ClientKNLTB(ClientBase):
         if not self.club_id or not self.x_lisa_auth_token:
             raise ValueError("Please login or provide 'club_id' & 'x_lisa_auth_token' to the Client")
 
-        # Check if date is in: dd-mm-yyyy format
+        # TODO: Check if date is in: dd-mm-yyyy format
 
-        # Check if time_start is in: hh:mm
+        # TODO: Check if time_start is in: hh:mm
 
         # Request URL when opening the "Spelen" page
-        club_time_table_for_date = self.session.get(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/availability_timeline?time_from={date}")).json()
+        club_time_table_for_date = self.make_request("GET", f"v1/pub/tennis/clubs/{self.club_id}/availability_timeline?time_from={date}").json()
 
         timeline_court_availability = club_time_table_for_date.get("timeline_court_availability")
 
@@ -130,10 +148,10 @@ class ClientKNLTB(ClientBase):
 
         # BELOW IS THE CODE FOR MAKING THE BOOKING FINAL
         # FOR NOW WE WILL ONLY RETURN THE PAYLOAD
-        response = self.session.post(self._url_for(f"/v1/pub/tennis/clubs/{self.club_id}/reservations"), data=json.dumps(payload))
+        response = self.make_request("GET", f"/v1/pub/tennis/clubs/{self.club_id}/reservations", data=json.dumps(payload))
 
-        parsed_response = self._handle_response(response, "Unable to make reservation")
-        return parsed_response, court_details
+        return self._handle_response(response, "Unable to search for club."), court_details
+
 
     def _url_for(self, endpoint):
         return f"{self.BASE_URL}{endpoint}"
@@ -147,6 +165,7 @@ class ClientKNLTB(ClientBase):
         raise APIError(error_message)
 
     def _login(self, payload):
+        # The login will only be tried once, no need to use the self.make_request method.
         response = self.session.post(self._url_for(f"v1/pub/tennis/clubs/{self.club_id}/auth_tokens"), data=json.dumps(payload))
 
         parsed_response = self._handle_response(response, "Unable to login.")
@@ -159,7 +178,7 @@ class ClientKNLTB(ClientBase):
         return parsed_response
 
     def _get_first_available_court_id(self, timeline_court_availability, sport_type, start_date_time):
-        for i, court_information in enumerate(timeline_court_availability):
+        for _, court_information in enumerate(timeline_court_availability):
             court_details = court_information.get("court_details")
             sport = court_details.get("sport").lower()
             if sport != sport_type.lower():

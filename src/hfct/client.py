@@ -1,16 +1,11 @@
+from .authentication_methods import AuthenticationMethods
 from .client_base import ClientBase
 from .client_factory import ClientFactory
 from .clients import Clients
-from .utils import BaseEnum
-
-
-class AuthenticationMethods(BaseEnum):
-    CLUB_NUMBER_PASSWORD = "club number and password"
-    ASSOCIATION_NUMBER_PASSWORD = "association number and password"
 
 
 def authenticate(client_name: Clients, auth_method: AuthenticationMethods, **kwargs) -> ClientBase:
-    client = ClientFactory.create_client(client_name, **kwargs)
+    client = ClientFactory.create_client(client_name, auth_method, **kwargs)
 
     if client.has_connection():
         return client

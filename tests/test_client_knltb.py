@@ -1,6 +1,7 @@
 import pytest
-from hfct import client_knltb
-from hfct.client import AuthenticationMethods, authenticate
+
+from hfct.authentication_methods import AuthenticationMethods
+from hfct.client import authenticate
 
 from hfct.client_knltb import ClientKNLTB
 from hfct.clients import Clients
