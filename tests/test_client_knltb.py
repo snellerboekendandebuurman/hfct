@@ -134,3 +134,9 @@ class TestClientKNLTBSearchClub:
         assert response["page"]["page_size"] == 25
         assert response["page"]["total_entries"] == 1
         assert response["page"]["total_pages"] == 1
+
+    # def test_book_court_successful(self) -> None:
+    #     client_knltb = authenticate(Clients.KNLTB, AuthenticationMethods.CLUB_NUMBER_PASSWORD, club_id=CLUB_ID_HCTILBURG, club_number=CLUB_NUMBER_JORIS_JANSEN, password=CLUB_PASSWORD_JORIS_JANSEN)
+
+    #     response = client_knltb.book_court("padel", "2023-12-10", "08:30", "8e41743f-9940-4f66-a44d-d40f80196471", "48cff314-c99b-44f1-bf5b-a660b1f03f55", "7edf7eb7-2e67-403b-9f34-352d3e0929b5", "d3d53db0-144c-4a63-b1d3-a3a0bb9f7e5f")
+    #     import pdb; pdb.set_trace()

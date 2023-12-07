@@ -146,8 +146,7 @@ class ClientKNLTB(ClientBase):
 
         # BELOW IS THE CODE FOR MAKING THE BOOKING FINAL
         # FOR NOW WE WILL ONLY RETURN THE PAYLOAD
-        response = self.make_request("GET", f"/v1/pub/tennis/clubs/{self.club_id}/reservations", data=json.dumps(payload))
-
+        response = self.make_request("POST", f"/v1/pub/tennis/clubs/{self.club_id}/reservations", data=json.dumps(payload))
         return self._handle_response(response, "Unable to search for club."), court_details
 
 
@@ -217,39 +216,3 @@ class ClientKNLTB(ClientBase):
 
         # Format the datetime in the desired format
         return utc_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-
-# client = ClientKNLTB()
-
-# Search for Club Info
-# response = client.search_club("HC Tilburg")
-
-
-# LOGIN TCT
-# response = client.club_login("3e4e3dee-888f-4471-ac0e-08474b5e572c", "club_number", "12620", "LG7E3aZcPBoiYU47F6@$")
-
-
-# LOGIN HC TILBURG
-# response = client.club_login("0009fb2d-b99b-4e18-9923-61a02b3c7a68", "club_number", "160", "Lu82Fc^Mr@TVY4t@PtKq")
-
-# Book court
-# response = client.club_book_court("0009fb2d-b99b-4e18-9923-61a02b3c7a68", "padel", "2023-10-20", "18:30", "8e41743f-9940-4f66-a44d-d40f80196471", "48cff314-c99b-44f1-bf5b-a660b1f03f55", "7edf7eb7-2e67-403b-9f34-352d3e0929b5", "d3d53db0-144c-4a63-b1d3-a3a0bb9f7e5f")
-
-# import pdb; pdb.set_trace()
-
-# def club_login(self, club_id, login_method, number, password):
-#     method = "club_membership_number" if login_method == "club_number" else "bond_number"
-#
-#     payload = {
-#         method: number,
-#         "password": password
-#     }
-#
-#     response = self.session.post(self._url_for(f"v1/pub/tennis/clubs/{club_id}/auth_tokens"), data=json.dumps(payload)).json()
-#
-#     x_lisa_auth_token = response.get("token")
-#     if x_lisa_auth_token:
-#         self.x_lisa_auth_token = x_lisa_auth_token
-#         self.session.headers.update({'x-lisa-auth-token': self.x_lisa_auth_token})
-#
-#     return response
